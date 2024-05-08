@@ -1,79 +1,71 @@
-print("uhhh i think ts skidded Lmaooooooo")
-getgenv().Desync = false -- leave this on false
-getgenv().KeyBind = Enum.KeyCode.F
+-- Source made fully by Actyrn
 
-getgenv().DirectionToShoot = "Behind"
+-- I ONLY MADE Y AXIS MODIFIABLE BECAUSE DAHOOD PATCHED THE OTHER AXIS'S
 
---[[
+getgenv().Settings = {
+	Antilock = false, -- If the antilock is enabled once you join
+	yAxis = -10000, -- Set to 0 to just break prediction, but it will make desync break
 
-           OPTIONS
-        
+	Keybind = Enum.KeyCode.F, -- Antilock keybind
 
-           Behind
-           Down -- can easily be resolved with underground resolver
-           ForWard
-           Left
-           One
-           Right
-           Up -- can easily be resolved with underground resolver
-           Zero
---]]
+	DesyncMode = true, -- If you stand still no one can shoot you and you shoot from the sky
+	DesyncAngles = 0.1, -- How fast you desync, keep it on 0.1 if you don't want it to be obvious
 
+	VelocityVisual = true -- Sees your velocity
+}
 
+-- Coding
 
+local veldot = Drawing.new("Circle")
 
-
-
-local uis = game:service'UserInputService'
-uis.InputBegan:Connect(
-    function(a, t)
-        if not t then
-            if a.KeyCode == getgenv().KeyBind and getgenv().Desync == false then
-                getgenv().Desync = true
-                game.StarterGui:SetCore("SendNotification", {
-                    Title = "prime";
-                    Text = "ON";
-                    Icon = "rbxassetid://57254792";
-                    Duration = 5;
-                    })
-                elseif a.KeyCode == getgenv().KeyBind and getgenv().Desync == true then
-                getgenv().Desync = false
-                game.StarterGui:SetCore("SendNotification", {
-                    Title = "Anti Aim";
-                    Text = "TURNED OFF";
-                    Icon = "rbxassetid://57254792";
-                    Duration = 5;
-                    })
-            end
-        end
+spawn(function()
+	veldot.Filled = true
+	veldot.Thickness = 1
+	veldot.Transparency = 1
+	veldot.Radius = 5
+	veldot.Color = Color3.fromRGB(170, 120, 210)
 end)
 
-getgenv().Direction = nil
+-- Velocity Visualizer
 
-if getgenv().DirectionToShoot == "Behind" then
-getgenv().Direction = Vector3.new(0, 0, -1)
-elseif getgenv().DirectionToShoot == "Down" then
-getgenv().Direction = Vector3.new(0, -1, 0)
-elseif getgenv().DirectionToShoot == "ForWard" then
-getgenv().Direction = Vector3.new(0, 0, 1)
-elseif getgenv().DirectionToShoot == "Left" then
-getgenv().Direction = Vector3.new(-1, 0, 0)
-elseif getgenv().DirectionToShoot == "One" then
-getgenv().Direction = Vector3.new(1, 1, 1)
-elseif getgenv().DirectionToShoot == "Right" then
-getgenv().Direction = Vector3.new(1, 0, 0)
-elseif getgenv().DirectionToShoot == "Up" then
-getgenv().Direction = Vector3.new(0, 1, 0)
-elseif getgenv().DirectionToShoot == "Zero" then
-getgenv().Direction = Vector3.new(0, 0, 0)
-end
+game:GetService("RunService").Heartbeat:Connect(function()
+	local pos, onscreen = workspace.CurrentCamera:WorldToViewportPoint(
+		game:GetService("Players").LocalPlayer.Character["HumanoidRootPart"].CFrame.Position +
+			(game:GetService("Players").LocalPlayer.Character["HumanoidRootPart"].AssemblyLinearVelocity *
+				0.15))
 
+	if Settings.VelocityVisual and onscreen then
+		veldot.Visible = true
+		veldot.Position = Vector2.new(pos.X, pos.Y)
+	else
+		veldot.Visible = false
+	end
+end)
 
-game:GetService("RunService").heartbeat:Connect(function()
-    if getgenv().Desync == true then
-    local abc = game.Players.LocalPlayer.Character.HumanoidRootPart.Velocity
-    game.Players.LocalPlayer.Character.HumanoidRootPart.Velocity = getgenv().Direction * (2^16)
-    game:GetService("RunService").RenderStepped:Wait()
-    game.Players.LocalPlayer.Character.HumanoidRootPart.Velocity = abc
-    end
+-- Anti-Aim Functions
+
+game:GetService("RunService").Heartbeat:Connect(function()
+	local hrp, hum = game:GetService("Players").LocalPlayer.Character.HumanoidRootPart, game:GetService("Players").LocalPlayer.Character.Humanoid
+	local velocity, cframe = hrp.AssemblyLinearVelocity, hrp.CFrame
+
+	if Settings.Antilock then
+		hrp.AssemblyLinearVelocity = Vector3.new(
+			0,
+			Settings.yAxis,
+			0)
+
+		if Settings.DesyncMode then
+			hrp.CFrame = cframe *
+				CFrame.Angles(0, math.rad(Settings.DesyncAngles), 0)
+		end
+
+		game:GetService("RunService").RenderStepped:Wait()
+		hrp.AssemblyLinearVelocity = velocity
+	end
+end)
+
+game:GetService("UserInputService").InputBegan:Connect(function(Key)
+	if Key.KeyCode == Settings.Keybind and not game:GetService("UserInputService"):GetFocusedTextBox() then
+		Settings.Antilock = not Settings.Antilock
+	end
 end)
